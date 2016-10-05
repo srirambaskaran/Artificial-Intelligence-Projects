@@ -1,0 +1,11 @@
+/bin/
+/cases/
+/more-test-cases/
+/random_inputs/
+/random_outputs/
+/results/
+/testcases-generated/
+/testcases-generated-output/
+/log
+/sampleoutput.txt
+/testcases-generated.zip
