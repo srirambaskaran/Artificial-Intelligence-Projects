@@ -2,9 +2,13 @@ package org.usc.homework1;
 
 import java.util.HashMap;
 
-class Node{
+public class Node{
 	private String node;
 	private HashMap<String, Object> otherProperties;
+	public Node(){
+		this.node="";
+		this.otherProperties = new HashMap<>();
+	}
 	public Node(String node){
 		this.node = node;
 		this.otherProperties = new HashMap<>();

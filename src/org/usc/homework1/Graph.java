@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-class Graph{
+public class Graph{
 	private Set<Node> nodes;
 	private Set<Edge> edges;
 	private HashMap<Node,HashMap<Node,Integer>> adjacencyList;
@@ -90,5 +90,4 @@ class Graph{
 	public String toString() {
 		return "Graph [nodes=" + nodes + ", edges=" + edges + ", isDirected=" + isDirected + "]";
 	}
-
 }
