@@ -99,19 +99,23 @@ public class GameBoard implements Cloneable {
 	}
 	
 	public void addAllToEmpty(HashSet<Cell> cells){
-		for(Cell cell:cells)
-			addToEmpty(cell.clone());
+//		for(Cell cell:cells)
+//			addToEmpty(cell.clone());
+		this.empty.addAll(cells);
 	}
 	public void addAllToXs(HashSet<Cell> cells){
-		for(Cell cell:cells)
-			addToXs(cell.clone());
+//		for(Cell cell:cells)
+//			addToXs(cell.clone());
+		this.xs.addAll(cells);
 	}
 	public void addAllToOs(HashSet<Cell> cells){
-		for(Cell cell:cells)
-			addToOs(cell.clone());
+//		for(Cell cell:cells)
+//			addToOs(cell.clone());
+		this.os.addAll(cells);
 	}
 	
 	public ArrayList<GameBoard> generateNextMoves(int depth){
+		if(empty.size() == 0) return new ArrayList<GameBoard>();
 		HashSet<Cell> myCells = nextPlay == 'X'?xs:os;
 		HashSet<Cell> raidCells = new HashSet<>();
 		for(Cell cell:myCells){
@@ -138,31 +142,11 @@ public class GameBoard implements Cloneable {
 		}
 		
 		ArrayList<GameBoard> neighbours = new ArrayList<>();
-		for(Cell raidCell: raidCells){
-			Cell newRaidCell = raidCell.clone();
-			
-			GameBoard neighbour = this.clone();
-			neighbour.removeFromEmpty(newRaidCell);
-			newRaidCell.cellValue = this.nextPlay;
-			if(this.nextPlay == 'X')
-				neighbour.addToXs(newRaidCell); 
-			else
-				neighbour.addToOs(newRaidCell);
-			
-			raidNeighbours(neighbour, newRaidCell);
-			neighbour.setDepth(depth);
-			neighbour.calculateUtilitiesOfPlayer();
-			neighbour.nextPlay = this.nextPlay == 'X'?'O':'X';
-			neighbour.getMove().cell = newRaidCell;
-			neighbour.getMove().moveType = "Raid";
-			
-			neighbours.add(neighbour);
-		}
 		for(Cell stakeCell: stakeCells){
 			Cell newStakeCell = stakeCell.clone();
 			
 			GameBoard neighbour = this.clone();
-			neighbour.removeFromEmpty(newStakeCell);
+			neighbour.removeFromEmpty(stakeCell);
 			newStakeCell.cellValue = this.nextPlay;
 			if(this.nextPlay == 'X')
 				neighbour.addToXs(newStakeCell); 
@@ -173,7 +157,29 @@ public class GameBoard implements Cloneable {
 			neighbour.nextPlay = this.nextPlay == 'X'?'O':'X';
 			neighbour.getMove().cell = newStakeCell;
 			neighbour.getMove().moveType = "Stake";
+			neighbour.cells.put(newStakeCell.rowIndex+","+newStakeCell.colIndex,newStakeCell);
+			neighbours.add(neighbour);
+		}
+		for(Cell raidCell: raidCells){
+			Cell newRaidCell = raidCell.clone();
 			
+			GameBoard neighbour = this.clone();
+			neighbour.removeFromEmpty(raidCell);
+			newRaidCell.cellValue = this.nextPlay;
+			raidNeighbours(neighbour, newRaidCell);
+			
+			if(this.nextPlay == 'X')
+				neighbour.addToXs(newRaidCell); 
+			else
+				neighbour.addToOs(newRaidCell);
+			
+			
+			neighbour.setDepth(depth);
+			neighbour.calculateUtilitiesOfPlayer();
+			neighbour.nextPlay = this.nextPlay == 'X'?'O':'X';
+			neighbour.getMove().cell = newRaidCell;
+			neighbour.getMove().moveType = "Raid";
+			neighbour.cells.put(newRaidCell.rowIndex+","+newRaidCell.colIndex,newRaidCell);
 			neighbours.add(neighbour);
 		}
 		return neighbours;
@@ -193,21 +199,71 @@ public class GameBoard implements Cloneable {
 			return true;
 		return false;
 	}
-	private void raidNeighbours(GameBoard neighbour, Cell newRaidCell) {
+	private ArrayList<Cell> raidNeighbours(GameBoard neighbour, Cell newRaidCell) {
 		char raidPlay = newRaidCell.cellValue;
+		char opponentPlay = newRaidCell.cellValue == 'X'?'O':'X';
 		Cell eastCell = neighbour.neighbour(newRaidCell, Direction.EAST);
 		Cell westCell = neighbour.neighbour(newRaidCell, Direction.WEST);
 		Cell northCell = neighbour.neighbour(newRaidCell, Direction.NORTH);
 		Cell southCell = neighbour.neighbour(newRaidCell, Direction.SOUTH);
-		
-		if(eastCell != null && eastCell.cellValue != '.' && eastCell.cellValue != raidPlay)
-			eastCell.cellValue = raidPlay;
-		if(westCell != null && westCell.cellValue != '.' && westCell.cellValue != raidPlay)
-			westCell.cellValue = raidPlay;
-		if(northCell != null && northCell.cellValue != '.' && northCell.cellValue != raidPlay)
-			northCell.cellValue =raidPlay;
-		if(southCell != null && southCell.cellValue != '.' && southCell.cellValue != raidPlay)
-			southCell.cellValue = raidPlay;
+		ArrayList<Cell> raidedCells = new ArrayList<>();
+		if(eastCell != null && eastCell.cellValue != '.' && eastCell.cellValue != raidPlay){
+			if(opponentPlay == 'X')
+				neighbour.removeFromXs(eastCell);
+			else
+				neighbour.removeFromOs(eastCell);
+			Cell eastCellNew = eastCell.clone();
+			eastCellNew.cellValue = raidPlay;
+			if(opponentPlay == 'O')
+				neighbour.addToXs(eastCellNew);
+			else
+				neighbour.addToOs(eastCellNew);
+			neighbour.cells.put(eastCellNew.rowIndex+","+eastCellNew.colIndex,eastCellNew);
+			raidedCells.add(eastCellNew);
+		}
+		if(westCell != null && westCell.cellValue != '.' && westCell.cellValue != raidPlay){
+			if(opponentPlay == 'X')
+				neighbour.removeFromXs(westCell);
+			else
+				neighbour.removeFromOs(westCell);
+			Cell westCellNew = westCell.clone();
+			westCellNew.cellValue = raidPlay;
+			if(opponentPlay == 'O')
+				neighbour.addToXs(westCellNew);
+			else
+				neighbour.addToOs(westCellNew);
+			neighbour.cells.put(westCellNew.rowIndex+","+westCellNew.colIndex,westCellNew);
+			raidedCells.add(westCellNew);
+		}
+		if(northCell != null && northCell.cellValue != '.' && northCell.cellValue != raidPlay){
+			if(opponentPlay == 'X')
+				neighbour.removeFromXs(northCell);
+			else
+				neighbour.removeFromOs(northCell);
+			Cell northCellNew = northCell.clone();
+			northCellNew.cellValue =raidPlay;
+			if(opponentPlay == 'O')
+				neighbour.addToXs(northCellNew);
+			else
+				neighbour.addToOs(northCellNew);
+			neighbour.cells.put(northCellNew.rowIndex+","+northCellNew.colIndex,northCellNew);
+			raidedCells.add(northCellNew);
+		}
+		if(southCell != null && southCell.cellValue != '.' && southCell.cellValue != raidPlay){
+			if(opponentPlay == 'X')
+				neighbour.removeFromXs(southCell);
+			else
+				neighbour.removeFromOs(southCell);
+			Cell southCellNew = southCell.clone();
+			southCellNew.cellValue = raidPlay;
+			if(opponentPlay == 'O')
+				neighbour.addToXs(southCellNew);
+			else
+				neighbour.addToOs(southCellNew);
+			neighbour.cells.put(southCellNew.rowIndex+","+southCellNew.colIndex,southCellNew);
+			raidedCells.add(southCellNew);
+		}
+		return raidedCells;
 	}
 	public void calculateUtilitiesOfPlayer(){
 		sumX = 0;
@@ -232,7 +288,7 @@ public class GameBoard implements Cloneable {
 			case EAST: j++; break;
 			case WEST: j--; break;
 		}
-		Cell neighbouringCell = cells.containsKey(i+","+j)?cells.get(i+","+j):null;
+		Cell neighbouringCell = this.cells.containsKey(i+","+j)?this.cells.get(i+","+j):null;
 		return neighbouringCell;
 	}
 	
@@ -268,8 +324,8 @@ public class GameBoard implements Cloneable {
 		move.cell = this.move.cell.clone();
 		move.moveType = this.move.moveType;
 		newBoard.nextPlay = this.nextPlay;
-		newBoard.cells = new HashMap<>(this.cells);
 		newBoard.myPlay = this.myPlay;
+		newBoard.cells.putAll(this.cells);
 		return newBoard;
 	}
 }

@@ -1,6 +1,8 @@
 package org.usc.homework2;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class Minimax {
 	private char yourPlay;
@@ -63,24 +65,31 @@ public class Minimax {
 	private ArrayList<GameBoard> action(GameBoard currentState,int depth) {
 		//Returns a sorted order of the next moves
 		ArrayList<GameBoard> neighbours = currentState.generateNextMoves(depth);
+		if(depth%2 == 0){
+			Collections.sort(neighbours,new Comparator<GameBoard>(){
+				public int compare(GameBoard g1, GameBoard g2){
+					if(!g1.getMove().moveType.equals(g2.getMove().moveType)){
+						return g1.getMove().moveType.equals("Stake")?-1:1;
+					}else{
+						Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
+						Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
+						return utilityValue1.compareTo(utilityValue2);
+					}
+				}
+			});
+		}else{
+			Collections.sort(neighbours,new Comparator<GameBoard>(){
+				public int compare(GameBoard g1, GameBoard g2){
+					if(!g1.getMove().moveType.equals(g2.getMove().moveType)){
+						return g1.getMove().moveType.equals("Stake")?-1:1;
+					}else{
+						Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
+						Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
+						return utilityValue1.compareTo(utilityValue2);
+					}
+				}
+			});
+		}
 		return neighbours;
-//		if(depth%2 == 0){
-//			Collections.sort(neighbours,new Comparator<GameBoard>(){
-//				public int compare(GameBoard g1, GameBoard g2){
-//					Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
-//					Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
-//					return utilityValue1.compareTo(utilityValue2);
-//				}
-//			});
-//		}else{
-//			Collections.sort(neighbours,new Comparator<GameBoard>(){
-//				public int compare(GameBoard g1, GameBoard g2){
-//					Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
-//					Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
-//					return -utilityValue1.compareTo(utilityValue2);
-//				}
-//			});
-//		}
-//		return neighbours;
 	}
 }

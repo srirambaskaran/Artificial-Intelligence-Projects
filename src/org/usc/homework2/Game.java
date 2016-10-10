@@ -27,7 +27,8 @@ public class Game {
 			Minimax minimax = new Minimax(current, nextPlay, maxDepth);
 			nextMove = minimax.minimaxDecision();
 		}else if(algorithm.equals("ALPHABETA")){
-			
+			AlphaBetaPruning alphaBetaPruning = new AlphaBetaPruning(current, nextPlay, maxDepth);
+			nextMove = alphaBetaPruning.alphaBetaSearch();
 		}else if(algorithm.equals("COMPETITION")){
 			
 		}
