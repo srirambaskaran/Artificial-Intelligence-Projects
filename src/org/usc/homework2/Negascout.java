@@ -1,20 +1,30 @@
 package org.usc.homework2;
 
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 
-public class AlphaBetaPruning {
+public class Negascout {
 	private char yourPlay;
 	private GameBoard currentState;
 	private int maxDepth;
+//	private double timeRemaining;
 	
-	public AlphaBetaPruning(GameBoard currentState, char yourPlay, int maxDepth){
+	public Negascout(GameBoard currentState, char yourPlay, double timeRemaining){
 		this.currentState = currentState;
 		this.yourPlay = yourPlay;
-		this.maxDepth = maxDepth;
+		this.maxDepth = findDepth(currentState.getEmpty().size());
+//		this.timeRemaining = timeRemaining;
+		
 	}
 	
-	public Move alphaBetaSearch(){
+	private int findDepth(int size) {
+//		return size/10 - (int)timeRemaining;
+		return 8;
+	}
+
+	public Move negascoutSearch(){
 		int depth = 0;
 		Move dummyMove = new Move();
 		dummyMove.moveType="Dummy";
@@ -28,8 +38,7 @@ public class AlphaBetaPruning {
 		int beta = Integer.MAX_VALUE;
 		for(Move m : possibleMoves){
 			initialMoves.add(m);
-			int utilityFromAction = minValue(currentState,initialMoves,depth+1,switchPlay(yourPlay), alpha, beta);;
-//			System.out.println(m+"\t"+utilityFromAction);
+			int utilityFromAction = pvs(currentState,initialMoves,depth+1,switchPlay(yourPlay), alpha, beta);
 			if(v < utilityFromAction){
 				v = utilityFromAction;
 				chosen = m;
@@ -46,42 +55,29 @@ public class AlphaBetaPruning {
 			}
 			initialMoves.remove(m);
 		}
-		
+		System.out.println("Depth: "+maxDepth);
 		return chosen;
 	}
 	
-	public int minValue(GameBoard currentState, LinkedList<Move> previousMoves, int depth, char play, int alpha, int beta){
-		if(depth == maxDepth)
-			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
-		int v = Integer.MAX_VALUE;
-		LinkedList<Move> moves =action(currentState,previousMoves,play, depth);
-		if(moves.size() == 0){
-			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
-		}
-		for(Move m:moves){
-			previousMoves.add(m);
-			v = Math.min(v, maxValue(currentState,previousMoves,depth+1, switchPlay(play),alpha, beta));
-			previousMoves.remove(m);
-			if(v <= alpha) return v;
-			beta = Math.min(beta, v);
-		}
-		return v;
-	}
-
-	private int maxValue(GameBoard currentState,LinkedList<Move> previousMoves, int depth, char play, int alpha, int beta) {
-		if(depth == maxDepth)
+	public int pvs(GameBoard currentState, LinkedList<Move> previousMoves, int depth, char play, int alpha, int beta){
+		if(depth >= maxDepth)
 			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
 		int v = Integer.MIN_VALUE;
-		LinkedList<Move> moves = action(currentState,previousMoves,play, depth);
-		if(moves.size() == 0){
-			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
-		}
-		for(Move m: moves){
+		LinkedList<Move> moves =action(currentState,previousMoves,play, depth); 
+		for(Move m:moves){
 			previousMoves.add(m);
-			v = Math.max(v, minValue(currentState,previousMoves,depth+1, switchPlay(play), alpha, beta));
-			previousMoves.remove(m);
-			if(v >= beta) return v;
+			if(moves.indexOf(m) !=0){
+				v = - pvs(currentState,previousMoves, depth+1,switchPlay(play),-alpha-1,-alpha);
+				if(alpha < v && v < beta){
+					v = - pvs(currentState,previousMoves, depth+1,switchPlay(play),beta, v);
+				}
+			}else{
+				v = - pvs(currentState,previousMoves, depth+1,switchPlay(play),-beta,-alpha);
+			}
+			
 			alpha = Math.max(alpha, v);
+			previousMoves.remove(m);
+			if(alpha>=beta) break;
 		}
 		return v;
 	}
@@ -97,6 +93,30 @@ public class AlphaBetaPruning {
 
 	private LinkedList<Move> action(GameBoard currentState, LinkedList<Move> previousMoves, char play, int depth) {
 		LinkedList<Move> moves = currentState.generateMoves(currentState, previousMoves, play);
+		Collections.sort(moves,new Comparator<Move>(){
+			public int compare(Move m1, Move m2){
+				if(!m1.moveType.equals(m2.moveType) && m1.moveType.equals("Stake"))
+					return -1;
+				else if(!m1.moveType.equals(m2.moveType) && m1.moveType.equals("Raid")) 
+					return 1;
+				else if(m1.utlityAfterMove > m2.utlityAfterMove)
+					return -1;
+				else if(m1.utlityAfterMove < m2.utlityAfterMove)
+					return 1;
+				else{
+					if(m1.cell.rowIndex < m2.cell.rowIndex)
+						return -1;
+					else if(m1.cell.rowIndex > m2.cell.rowIndex)
+						return 1;
+					else{
+						if(m1.cell.colIndex < m2.cell.colIndex)
+							return -1;
+						else return 1;
+						
+					}
+				}
+			}
+		});
 		return moves;
 	}
 	private char switchPlay(char yourPlay){

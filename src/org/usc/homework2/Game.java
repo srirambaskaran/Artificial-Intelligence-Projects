@@ -1,23 +1,21 @@
 package org.usc.homework2;
 
-import org.usc.homework1.Graph;
-
 public class Game {
 	private String algorithm;
 	private GameBoard current;
-	private Graph g;
 	private GameBoard nextMove;
 	private int maxDepth;
+	private double timeRem;
 	private char nextPlay;
-	public Game(String algorithm, GameBoard current, int depth, char nextPlay) {
+	public Game(String algorithm, GameBoard current, String depthString, char nextPlay) {
 		super();
 		this.algorithm = algorithm;
 		this.current = current;
-		this.maxDepth = depth;
+		if(algorithm.equals("COMPETITION"))
+			timeRem = Double.parseDouble(depthString);
+		else
+			this.maxDepth = Integer.parseInt(depthString);
 		this.nextPlay = nextPlay;
-	}
-	public Graph getG() {
-		return g;
 	}
 	public GameBoard getNextMove() {
 		return nextMove;
@@ -25,12 +23,33 @@ public class Game {
 	public void play() {
 		if(algorithm.equals("MINIMAX")){
 			Minimax minimax = new Minimax(current, nextPlay, maxDepth);
-			nextMove = minimax.minimaxDecision();
+			nextMove = createBoard(minimax.minimaxDecision());
 		}else if(algorithm.equals("ALPHABETA")){
 			AlphaBetaPruning alphaBetaPruning = new AlphaBetaPruning(current, nextPlay, maxDepth);
-			nextMove = alphaBetaPruning.alphaBetaSearch();
+			nextMove = createBoard(alphaBetaPruning.alphaBetaSearch());
 		}else if(algorithm.equals("COMPETITION")){
-			
+			Negascout negascout = new Negascout(current, nextPlay, timeRem);
+			nextMove = createBoard(negascout.negascoutSearch());
 		}
+	}
+	private GameBoard createBoard(Move m) {
+		if(m == null) return new GameBoard();
+		Cell cellChanged = m.cell;
+		current.removeFromEmpty(cellChanged);
+		if(nextPlay == 'X'){
+			current.addToXs(cellChanged);
+			for(Cell otherCell: m.otherCellsUpdated){
+				current.removeFromOs(otherCell);
+				current.addToXs(otherCell);
+			}
+		}else{
+			current.addToOs(cellChanged);
+			for(Cell otherCell: m.otherCellsUpdated){
+				current.removeFromXs(otherCell);
+				current.addToOs(otherCell);
+			}
+		}
+		current.setMove(m);
+		return current;
 	}
 }

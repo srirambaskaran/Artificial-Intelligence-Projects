@@ -1,8 +1,9 @@
 package org.usc.homework2;
 
-import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 /**
  * This represents a board. This contains three {@link HashSet} of {@link Cell} type.<br/>
  * empty = contains all the empty cells in the node<br/>
@@ -14,7 +15,7 @@ import java.util.HashSet;
  * @author Sriram
  *
  */
-public class GameBoard implements Cloneable {
+public class GameBoard{
 	private HashSet<Cell> empty;
 	private HashSet<Cell> xs;
 	private HashSet<Cell> os;
@@ -98,173 +99,114 @@ public class GameBoard implements Cloneable {
 		this.cells.put(cell.rowIndex+","+cell.colIndex,cell);
 	}
 	
-	public void addAllToEmpty(HashSet<Cell> cells){
-//		for(Cell cell:cells)
-//			addToEmpty(cell.clone());
-		this.empty.addAll(cells);
-	}
-	public void addAllToXs(HashSet<Cell> cells){
-//		for(Cell cell:cells)
-//			addToXs(cell.clone());
-		this.xs.addAll(cells);
-	}
-	public void addAllToOs(HashSet<Cell> cells){
-//		for(Cell cell:cells)
-//			addToOs(cell.clone());
-		this.os.addAll(cells);
-	}
-	
-	public ArrayList<GameBoard> generateNextMoves(int depth){
-		if(empty.size() == 0) return new ArrayList<GameBoard>();
+	public LinkedList<Move> generateMoves(GameBoard inputBoard, LinkedList<Move> previousMoves, char nextPlay){
+		if(xs.size() + os.size() + previousMoves.size() == cells.size()+1){
+			return new LinkedList<Move>();
+		}
+		LinkedList<Move> moves = new LinkedList<>();
 		HashSet<Cell> myCells = nextPlay == 'X'?xs:os;
+		HashSet<Cell> opponentCells = nextPlay == 'X'?os:xs;
+		HashSet<Cell> emptyCells = new HashSet<>(empty);
+		HashSet<Cell> myCellsUpdated = new HashSet<>();
+		HashSet<Cell> opponentCellsUpdated = new HashSet<>();
+		myCellsUpdated.addAll(myCells);
+		opponentCellsUpdated.addAll(opponentCells);
+		Move previousMove = previousMoves.get(previousMoves.size()-1);
+		for(Move m: previousMoves){
+			if(m.moveType.equals("Dummy")) continue;
+			if(m.moveType.equals("Stake")){
+				if(m.moveBy == nextPlay)
+					myCellsUpdated.add(m.cell);
+				else
+					opponentCellsUpdated.add(m.cell);
+			}
+			else{
+				if(m.moveBy == nextPlay)
+					myCellsUpdated.add(m.cell);
+				else
+					opponentCellsUpdated.add(m.cell);
+				for(Cell cell: m.otherCellsUpdated){
+					if(m.moveBy == nextPlay){
+						opponentCellsUpdated.remove(cell);
+						myCellsUpdated.add(cell);
+					}
+					else{
+						myCellsUpdated.remove(cell);
+						opponentCellsUpdated.add(cell);
+					}
+				}
+			}
+		}
+				
+		emptyCells.removeAll(myCellsUpdated);
+		emptyCells.removeAll(opponentCellsUpdated);	
+		
+		
 		HashSet<Cell> raidCells = new HashSet<>();
-		for(Cell cell:myCells){
-			Cell eastCell = neighbour(cell, Direction.EAST);
-			Cell westCell = neighbour(cell, Direction.WEST);
-			Cell northCell = neighbour(cell, Direction.NORTH);
-			Cell southCell = neighbour(cell, Direction.SOUTH);
-			
-			if(eastCell != null && eastCell.cellValue == '.' && neigbourContainsOpposite(eastCell))
-				raidCells.add(eastCell);
-			if(westCell != null && westCell.cellValue == '.' && neigbourContainsOpposite(westCell))
-				raidCells.add(westCell);
-			if(northCell != null && northCell.cellValue == '.' && neigbourContainsOpposite(northCell))
-				raidCells.add(northCell);
-			if(southCell != null && southCell.cellValue == '.' && neigbourContainsOpposite(southCell))
-				raidCells.add(southCell);
+		for(Cell cell : emptyCells){
+			Move stakeMove = new Move();
+			stakeMove.cell = cell;
+			stakeMove.moveType = "Stake";
+			if(myPlay == nextPlay)
+				stakeMove.utlityAfterMove = previousMove.utlityAfterMove + cell.utilityValue;
+			else
+				stakeMove.utlityAfterMove = previousMove.utlityAfterMove - cell.utilityValue;
+			stakeMove.numCellsUpdated = 1;
+			stakeMove.moveBy=nextPlay;
+			moves.add(stakeMove);
 		}
 
-		HashSet<Cell> stakeCells = new HashSet<>();
-		for(Cell cell : empty){
-			if(!raidCells.contains(cell)){
-				stakeCells.add(cell);
+		for(Cell cell:myCellsUpdated){
+			for(Direction direction: Direction.values()){
+				Cell neighbour = cells.get(rowIndex(cell.rowIndex, direction)+","+colIndex(cell.colIndex, direction));
+				if(emptyCells.contains(neighbour)){
+					int conqueredPoints = 0;
+					int opponentLostPoints = 0;
+					Move raidMove = new Move();
+					int numCellsUpdated = 0;
+					boolean raid = false;
+					for(Direction direction2: Direction.values()){
+						Cell neighbour2 = cells.get(rowIndex(neighbour.rowIndex, direction2)+","+colIndex(neighbour.colIndex, direction2));
+						if(opponentCellsUpdated.contains(neighbour2)){
+							raid = true;
+							conqueredPoints+=neighbour2.utilityValue;
+							opponentLostPoints+=neighbour2.utilityValue;
+							raidMove.addOtherCellsUpdated(neighbour2);
+							numCellsUpdated++;
+						}
+					}
+					raidMove.cell = neighbour;
+					raidMove.moveType = "Raid";
+					if(myPlay == nextPlay)
+						raidMove.utlityAfterMove = previousMove.utlityAfterMove + neighbour.utilityValue + conqueredPoints + opponentLostPoints;
+					else
+						raidMove.utlityAfterMove = previousMove.utlityAfterMove - neighbour.utilityValue - conqueredPoints - opponentLostPoints;
+					raidMove.numCellsUpdated = numCellsUpdated + 1;
+					raidMove.moveBy = nextPlay;
+					if(raid){
+						moves.add(raidMove);
+						raidCells.add(neighbour);
+					}
+				}
 			}
 		}
 		
-		ArrayList<GameBoard> neighbours = new ArrayList<>();
-		for(Cell stakeCell: stakeCells){
-			Cell newStakeCell = stakeCell.clone();
-			
-			GameBoard neighbour = this.clone();
-			neighbour.removeFromEmpty(stakeCell);
-			newStakeCell.cellValue = this.nextPlay;
-			if(this.nextPlay == 'X')
-				neighbour.addToXs(newStakeCell); 
-			else
-				neighbour.addToOs(newStakeCell);
-			neighbour.setDepth(depth);
-			neighbour.calculateUtilitiesOfPlayer();
-			neighbour.nextPlay = this.nextPlay == 'X'?'O':'X';
-			neighbour.getMove().cell = newStakeCell;
-			neighbour.getMove().moveType = "Stake";
-			neighbour.cells.put(newStakeCell.rowIndex+","+newStakeCell.colIndex,newStakeCell);
-			neighbours.add(neighbour);
-		}
-		for(Cell raidCell: raidCells){
-			Cell newRaidCell = raidCell.clone();
-			
-			GameBoard neighbour = this.clone();
-			neighbour.removeFromEmpty(raidCell);
-			newRaidCell.cellValue = this.nextPlay;
-			raidNeighbours(neighbour, newRaidCell);
-			
-			if(this.nextPlay == 'X')
-				neighbour.addToXs(newRaidCell); 
-			else
-				neighbour.addToOs(newRaidCell);
-			
-			
-			neighbour.setDepth(depth);
-			neighbour.calculateUtilitiesOfPlayer();
-			neighbour.nextPlay = this.nextPlay == 'X'?'O':'X';
-			neighbour.getMove().cell = newRaidCell;
-			neighbour.getMove().moveType = "Raid";
-			neighbour.cells.put(newRaidCell.rowIndex+","+newRaidCell.colIndex,newRaidCell);
-			neighbours.add(neighbour);
-		}
-		return neighbours;
+
+		return moves;
 	}
-	private boolean neigbourContainsOpposite(Cell cell) {
-		Cell eastCell = neighbour(cell, Direction.EAST);
-		Cell westCell = neighbour(cell, Direction.WEST);
-		Cell northCell = neighbour(cell, Direction.NORTH);
-		Cell southCell = neighbour(cell, Direction.SOUTH);
-		if(eastCell != null && eastCell.cellValue != '.' && eastCell.cellValue != nextPlay)
-			return true;
-		if(westCell != null && westCell.cellValue != '.' && westCell.cellValue != nextPlay)
-			return true;
-		if(northCell != null && northCell.cellValue != '.' && northCell.cellValue != nextPlay)
-			return true;
-		if(southCell != null && southCell.cellValue != '.' && southCell.cellValue != nextPlay)
-			return true;
-		return false;
+	
+	public boolean neigbourContainsOpposite(Cell cell, HashSet<Cell> opponentCells){
+		Cell dummyEastCell = new Cell(cell.rowIndex,cell.colIndex+1);
+		Cell dummyWestCell = new Cell(cell.rowIndex,cell.colIndex-1);
+		Cell dummyNorthCell = new Cell(cell.rowIndex-1,cell.colIndex);
+		Cell dummySouthCell = new Cell(cell.rowIndex+1,cell.colIndex);
+		return opponentCells.contains(dummyEastCell) 
+				|| opponentCells.contains(dummyWestCell) 
+				|| opponentCells.contains(dummyNorthCell) 
+				|| opponentCells.contains(dummySouthCell); 
 	}
-	private ArrayList<Cell> raidNeighbours(GameBoard neighbour, Cell newRaidCell) {
-		char raidPlay = newRaidCell.cellValue;
-		char opponentPlay = newRaidCell.cellValue == 'X'?'O':'X';
-		Cell eastCell = neighbour.neighbour(newRaidCell, Direction.EAST);
-		Cell westCell = neighbour.neighbour(newRaidCell, Direction.WEST);
-		Cell northCell = neighbour.neighbour(newRaidCell, Direction.NORTH);
-		Cell southCell = neighbour.neighbour(newRaidCell, Direction.SOUTH);
-		ArrayList<Cell> raidedCells = new ArrayList<>();
-		if(eastCell != null && eastCell.cellValue != '.' && eastCell.cellValue != raidPlay){
-			if(opponentPlay == 'X')
-				neighbour.removeFromXs(eastCell);
-			else
-				neighbour.removeFromOs(eastCell);
-			Cell eastCellNew = eastCell.clone();
-			eastCellNew.cellValue = raidPlay;
-			if(opponentPlay == 'O')
-				neighbour.addToXs(eastCellNew);
-			else
-				neighbour.addToOs(eastCellNew);
-			neighbour.cells.put(eastCellNew.rowIndex+","+eastCellNew.colIndex,eastCellNew);
-			raidedCells.add(eastCellNew);
-		}
-		if(westCell != null && westCell.cellValue != '.' && westCell.cellValue != raidPlay){
-			if(opponentPlay == 'X')
-				neighbour.removeFromXs(westCell);
-			else
-				neighbour.removeFromOs(westCell);
-			Cell westCellNew = westCell.clone();
-			westCellNew.cellValue = raidPlay;
-			if(opponentPlay == 'O')
-				neighbour.addToXs(westCellNew);
-			else
-				neighbour.addToOs(westCellNew);
-			neighbour.cells.put(westCellNew.rowIndex+","+westCellNew.colIndex,westCellNew);
-			raidedCells.add(westCellNew);
-		}
-		if(northCell != null && northCell.cellValue != '.' && northCell.cellValue != raidPlay){
-			if(opponentPlay == 'X')
-				neighbour.removeFromXs(northCell);
-			else
-				neighbour.removeFromOs(northCell);
-			Cell northCellNew = northCell.clone();
-			northCellNew.cellValue =raidPlay;
-			if(opponentPlay == 'O')
-				neighbour.addToXs(northCellNew);
-			else
-				neighbour.addToOs(northCellNew);
-			neighbour.cells.put(northCellNew.rowIndex+","+northCellNew.colIndex,northCellNew);
-			raidedCells.add(northCellNew);
-		}
-		if(southCell != null && southCell.cellValue != '.' && southCell.cellValue != raidPlay){
-			if(opponentPlay == 'X')
-				neighbour.removeFromXs(southCell);
-			else
-				neighbour.removeFromOs(southCell);
-			Cell southCellNew = southCell.clone();
-			southCellNew.cellValue = raidPlay;
-			if(opponentPlay == 'O')
-				neighbour.addToXs(southCellNew);
-			else
-				neighbour.addToOs(southCellNew);
-			neighbour.cells.put(southCellNew.rowIndex+","+southCellNew.colIndex,southCellNew);
-			raidedCells.add(southCellNew);
-		}
-		return raidedCells;
-	}
+
+	
 	public void calculateUtilitiesOfPlayer(){
 		sumX = 0;
 		sumO = 0;
@@ -279,29 +221,19 @@ public class GameBoard implements Cloneable {
 		}
 	}
 	
-	public Cell neighbour(Cell cell, Direction direction){
-		int i=cell.rowIndex;
-		int j=cell.colIndex;
-		switch(direction){
-			case NORTH: i--; break;
-			case SOUTH: i++; break;
-			case EAST: j++; break;
-			case WEST: j--; break;
-		}
-		Cell neighbouringCell = this.cells.containsKey(i+","+j)?this.cells.get(i+","+j):null;
-		return neighbouringCell;
-	}
-	
 	public String toString(){
 		StringBuilder builder = new StringBuilder();
 		int numCells = empty.size() + xs.size() + os.size();
 		int boardDimension = (int)Math.sqrt(numCells);
 		char[][] outputMatrix = new char[boardDimension][boardDimension];
-		for(String cellIndices:cells.keySet()){
-			String[] cellIndicesToken = cellIndices.split(",");
-			int i = Integer.parseInt(cellIndicesToken[0]);
-			int j = Integer.parseInt(cellIndicesToken[1]);
-			outputMatrix[i][j] = cells.get(cellIndices).cellValue;
+		for(Cell cell : xs){
+			outputMatrix[cell.rowIndex][cell.colIndex] = 'X';
+		}
+		for(Cell cell : os){
+			outputMatrix[cell.rowIndex][cell.colIndex] = 'O';
+		}
+		for(Cell cell : empty){
+			outputMatrix[cell.rowIndex][cell.colIndex] = '.';
 		}
 		for(int i=0;i<boardDimension;i++){
 			for(int j=0;j<boardDimension;j++){
@@ -309,24 +241,32 @@ public class GameBoard implements Cloneable {
 			}
 			builder.append("\n");
 		}
-		return builder.toString();
+		String outputString = builder.toString();
+		if(outputString.endsWith("\n")){
+			outputString = outputString.substring(0,outputString.length()-1);
+		}
+		return outputString;
 	}
 	
-	public GameBoard clone(){
-		GameBoard newBoard = new GameBoard();
-		newBoard.addAllToEmpty(this.empty);
-		newBoard.addAllToXs(this.xs);
-		newBoard.addAllToOs(this.os);
-		newBoard.sumX = this.sumX;
-		newBoard.sumO = this.sumO;
-		newBoard.depth = this.depth;
-		newBoard.move = new Move();
-		move.cell = this.move.cell.clone();
-		move.moveType = this.move.moveType;
-		newBoard.nextPlay = this.nextPlay;
-		newBoard.myPlay = this.myPlay;
-		newBoard.cells.putAll(this.cells);
-		return newBoard;
+	
+	public int rowIndex(int old, Direction direction){
+		switch(direction){
+			case NORTH: return old-1;
+			case SOUTH: return old+1;
+			case EAST: 
+			case WEST: 
+			default: return old;
+		}
+	}
+	
+	public int colIndex(int old, Direction direction){
+		switch(direction){
+			case EAST: return old+1;
+			case WEST: return old-1;
+			case NORTH: 
+			case SOUTH: 
+			default: return old;
+		}
 	}
 }
 

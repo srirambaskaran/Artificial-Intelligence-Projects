@@ -13,11 +13,11 @@ public class TestCaseRunner {
 		String algoInputFile="input.txt";
 		String algoOutputFile="output.txt";
 		String outputRootFolder="testcases-generated-output-shawn";
-		String[] algorithms={"BFS","DFS","UCS","A*"};
+//		String[] algorithms={"BFS","DFS","UCS","A*"};
 		File[] testCases = new File(inputRootFolder).listFiles();
 		StringBuilder testCaseData = new StringBuilder();
-		String[] noAStars = {"1","2","3","4","5","6","11","12"};
-		int i=1;
+//		String[] noAStars = {"1","2","3","4","5","6","11","12"};
+//		int i=1;
 		for(File testCase:testCases){
 //			boolean runAStar = true;
 //			for(String noAStar:noAStars){

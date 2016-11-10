@@ -1,45 +1,65 @@
-package org.usc.homework1;
+package org.usc.homework2;
+
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
 import java.util.Calendar;
 
 public class Benchmark {
 
-	public static void main(String[] args) throws Exception {		
-		String testCasesFolder="cases";
-		String userOutputFolder="results";
+	public static void main(String[] args) {		
+		String testCasesFolder="hw2-5000/INPUT/";
+		String userOutputFolder="homework2-results";
 
-		File programInputFile = new File("input.txt");
-		File programOutputFile = new File("output.txt");
-		File logFile = new File("log");
+		File programInputFile = new File("homework2/input.txt");
+		File programOutputFile = new File("homework2/output.txt");
+//		File logFile = new File("log");
 		File testCases = new File(testCasesFolder);
+		int hits = 0;
+		int misses = 0;
+		StringBuilder missesList = new StringBuilder();
 		for(File testCase: testCases.listFiles()){
-			if(!testCase.getName().startsWith("input")) continue;
+			try{
+			if(!testCase.getName().endsWith(".in")) continue;
 
 			copyFile(testCase,programInputFile);
 			
 			long startTime = Calendar.getInstance().getTimeInMillis();
-			Process p = Runtime.getRuntime().exec("cmd /C java homework");
-			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			BufferedWriter writer = new BufferedWriter(new FileWriter(logFile));
-			String line = null;
-			while ((line = in.readLine()) != null) {
-				writer.write(line);
-			}
-			writer.close();
-			p.waitFor();
+//			Process p = Runtime.getRuntime().exec("cmd /C java homework");
+			homework.main(args);
+//			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//			BufferedWriter writer = new BufferedWriter(new FileWriter(logFile));
+//			String line = null;
+//			while ((line = in.readLine()) != null) {
+//				writer.write(line);
+//			}
+//			writer.close();
+//			p.waitFor();
 			System.out.println("++ "+testCase.getName()+" ++");
 			System.out.println("Time taken: "+((double)(Calendar.getInstance().getTimeInMillis()) - startTime) / 1000.0);
-			String diff = difference(programOutputFile,new File(testCasesFolder+File.separator+testCase.getName().replace("input","output")));
+			String diff = difference(programOutputFile,new File(testCasesFolder+File.separator+testCase.getName().replace("in","out")));
 			System.out.println(diff);
-			copyFile(programOutputFile, new File(userOutputFolder+File.separator+testCase.getName().replace("input","output")));
-			
+			if(diff.contains("No difference")){
+				hits++;
+			}else{
+				misses++;
+				missesList.append(testCase.getName()+",");
+			}
+			copyFile(programOutputFile, new File(userOutputFolder+File.separator+testCase.getName().replace("in","out")));
+			}catch(Exception e){
+				System.out.println("++ "+testCase.getName()+" ++");
+				System.err.println("Error! ");
+			}
 		}
+		
+		System.out.println("Hits: "+hits+"\tMisses "+misses);
+		if(missesList.length()>0)
+			System.out.println(missesList.substring(0,missesList.length()-1));
+		else
+			System.out.println("All Test Cases Passed");
 	}
 
 	public static void copyFile(File sourceFile, File destinationFile) throws Exception {
@@ -47,7 +67,7 @@ public class Benchmark {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(destinationFile));
 		String line = "";
 		while((line = reader.readLine())!=null){
-			writer.write(line+"\r\n");
+			writer.write(line+"\n");
 		}
 		reader.close();
 		writer.close();
@@ -91,3 +111,4 @@ public class Benchmark {
 		
 	}
 }
+

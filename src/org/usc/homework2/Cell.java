@@ -1,5 +1,6 @@
 package org.usc.homework2;
 
+
 /**
  * Represents one cell in the board
  * @author Sriram
@@ -49,8 +50,6 @@ public class Cell implements Cloneable{
 		if (colIndex != other.colIndex)
 			return false;
 		if (rowIndex != other.rowIndex)
-			return false;
-		if (cellValue != other.cellValue)
 			return false;
 		return true;
 	}

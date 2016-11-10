@@ -1,8 +1,7 @@
 package org.usc.homework2;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+
+import java.util.LinkedList;
 
 public class Minimax {
 	private char yourPlay;
@@ -15,40 +14,73 @@ public class Minimax {
 		this.maxDepth = maxDepth;
 	}
 	
-	public GameBoard minimaxDecision(){
+	private char switchPlay(char yourPlay){
+		return yourPlay == 'X'?'O':'X';
+	}
+	
+	public Move minimaxDecision(){
 		int depth = 0;
-		ArrayList<GameBoard> actions = action(currentState,depth+1);
+		Move dummyMove = new Move();
+		dummyMove.moveType="Dummy";
+		dummyMove.utlityAfterMove = getUtility(currentState);
+		LinkedList<Move> initialMoves = new LinkedList<>();
+		initialMoves.add(dummyMove);
+		LinkedList<Move> possibleMoves = action(currentState, initialMoves , yourPlay, depth);
+		
 		int v = Integer.MIN_VALUE;
-		GameBoard chosen = null;
-		for(GameBoard a : actions){
-			int utilityFromAction = min(a, depth+1);;
+		Move chosen = null;
+		for(Move m : possibleMoves){
+			initialMoves.add(m);
+			int utilityFromAction = minValue(currentState,initialMoves,depth+1,switchPlay(yourPlay));;
+//			System.out.println(m+"\t"+utilityFromAction);
 			if(v < utilityFromAction){
 				v = utilityFromAction;
-				chosen = a;
+				chosen = m;
+			}else if(v == utilityFromAction){
+				if(!m.moveType.equals(chosen.moveType) && m.moveType.equals("Stake"))
+					chosen = m;
+				else if(m.moveType.equals(chosen.moveType)){
+					if(m.cell.rowIndex < chosen.cell.rowIndex)
+						chosen = m;
+					else if(m.cell.rowIndex == chosen.cell.rowIndex)
+						if(m.cell.colIndex < chosen.cell.colIndex)
+							chosen = m;
+				}
 			}
+			initialMoves.remove(m);
 		}
 		
 		return chosen;
 	}
 	
-	public int min(GameBoard currentState, int depth){
+	public int minValue(GameBoard currentState, LinkedList<Move> previousMoves, int depth, char play){
 		if(depth == maxDepth)
-			return getUtility(currentState);
+			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
 		int v = Integer.MAX_VALUE;
-		ArrayList<GameBoard> actions =action(currentState, depth+1); 
-		for(GameBoard a : actions){
-			v = Math.min(v, max(a,depth+1));
+		LinkedList<Move> moves =action(currentState,previousMoves,play, depth);
+		if(moves.size() == 0){
+			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
+		}
+		for(Move m:moves){
+			previousMoves.add(m);
+			v = Math.min(v, maxValue(currentState,previousMoves,depth+1, switchPlay(play)));
+			previousMoves.remove(m);
 		}
 		return v;
 	}
 
-	private int max(GameBoard currentState, int depth) {
+	private int maxValue(GameBoard currentState,LinkedList<Move> previousMoves, int depth, char play) {
 		if(depth == maxDepth)
-			return getUtility(currentState);
+			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
 		int v = Integer.MIN_VALUE;
-		ArrayList<GameBoard> actions = action(currentState,depth+1);
-		for(GameBoard a:actions){
-			v = Math.max(v, min(a,depth+1));
+		LinkedList<Move> moves = action(currentState,previousMoves,play, depth);
+		if(moves.size() == 0){
+			return previousMoves.get(previousMoves.size()-1).utlityAfterMove;
+		}
+		for(Move m: moves){
+			previousMoves.add(m);
+			v = Math.max(v, minValue(currentState,previousMoves,depth+1, switchPlay(play)));
+			previousMoves.remove(m);
 		}
 		return v;
 	}
@@ -62,34 +94,8 @@ public class Minimax {
 			return 0;
 	}
 
-	private ArrayList<GameBoard> action(GameBoard currentState,int depth) {
-		//Returns a sorted order of the next moves
-		ArrayList<GameBoard> neighbours = currentState.generateNextMoves(depth);
-		if(depth%2 == 0){
-			Collections.sort(neighbours,new Comparator<GameBoard>(){
-				public int compare(GameBoard g1, GameBoard g2){
-					if(!g1.getMove().moveType.equals(g2.getMove().moveType)){
-						return g1.getMove().moveType.equals("Stake")?-1:1;
-					}else{
-						Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
-						Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
-						return utilityValue1.compareTo(utilityValue2);
-					}
-				}
-			});
-		}else{
-			Collections.sort(neighbours,new Comparator<GameBoard>(){
-				public int compare(GameBoard g1, GameBoard g2){
-					if(!g1.getMove().moveType.equals(g2.getMove().moveType)){
-						return g1.getMove().moveType.equals("Stake")?-1:1;
-					}else{
-						Integer utilityValue1 = g1.getNextPlay() == 'X'?g1.getSumX()-g1.getSumO() :g1.getSumO()-g1.getSumX();
-						Integer utilityValue2 = g2.getNextPlay() == 'X'?g2.getSumX()-g2.getSumO() :g2.getSumO()-g2.getSumX();
-						return utilityValue1.compareTo(utilityValue2);
-					}
-				}
-			});
-		}
-		return neighbours;
+	private LinkedList<Move> action(GameBoard currentState, LinkedList<Move> previousMoves, char play, int depth) {
+		LinkedList<Move> moves = currentState.generateMoves(currentState, previousMoves, play);
+		return moves;
 	}
 }
