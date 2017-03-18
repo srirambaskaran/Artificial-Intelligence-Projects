@@ -7,7 +7,7 @@ There are 3 homeworks in this course.
 1. Inference in FOL: Inference using Resolution refutation for a given KB, under closed world assumptions
 
 #### More specifications
-1. [Homework 1]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw1-csci561-f16.pdf")
-1. [Homework 2]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw2-csci561-f16.pdf")
-1. [Homework 3]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw3-csci561-f16.pdf")
+1. ["Homework 1"]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw1-csci561-f16.pf")
+1. ["Homework 2"]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw2-csci561-f16.pdf")
+1. ["Homework 3"]("https://github.com/srirambaskaran/Artificial-Intelligence-Projects/blob/master/hw3-csci561-f16.pdf")
 
