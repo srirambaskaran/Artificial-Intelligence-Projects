@@ -1,7 +1,5 @@
 # Artificial-Intelligence-Projects
-## CS561 USC Artificial Intelligence Class Project
 
-There are 3 homeworks in this course.
 1. Search (Uninformed and Informed): Implemented A-Star, UCS, DFS and BFS. Refer to org.usc.homework1.homework.java for more info. 
 1. Game playing: Implemented Minimax standard version and with alpha beta pruning for a specific game designed for the class 
 1. Inference in FOL: Inference using Resolution refutation for a given KB, under closed world assumptions
